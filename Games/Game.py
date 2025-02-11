@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Self, Any, TypeVar, List
+from typing import Any, TypeVar, List, Optional
 
 # A Player is either first or second
 # This is used to report the winner and keep track of the current player
@@ -16,7 +16,7 @@ class Game(ABC):
     Move = TypeVar("Move")
 
     @abstractmethod
-    def get_winner(self) -> Player | None:
+    def get_winner(self) -> Optional[Player]:
         # returns the winner of the game
         # None if the game is not over
         pass
@@ -39,7 +39,7 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def get_copy(self) -> Self:
+    def get_copy(self) -> Any:
         # returns a copy of self
         # this is useful for trying out moves without affecting the original
         pass

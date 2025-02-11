@@ -1,4 +1,4 @@
-from typing import Any, Self, List
+from typing import Any, List, Optional
 from Games.Game import Game, Player
 
 class ConnectFourMove:
@@ -11,7 +11,7 @@ class ConnectFour(Game):
         # TODO: Implement
         pass
 
-    def get_winner(self) -> Player | None:
+    def get_winner(self) -> Optional[Player]:
         # TODO: Implement
         pass
 
@@ -27,7 +27,7 @@ class ConnectFour(Game):
         # TODO: Implement
         pass
 
-    def get_copy(self) -> Self:
+    def get_copy(self) -> Any:
         # TODO: Implement
         pass
 
