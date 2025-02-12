@@ -81,6 +81,13 @@ class ConnectFour(Game):
         return False
         
     def get_winner(self) -> Optional[Player]:
+        color = self.get_winner_color()
+        if color is None: return None
+        if color == 0: return Player.FIRST
+        if color == 1: return Player.SECOND
+        assert False
+
+    def get_winner_color(self) -> int:
         # Check rows
         for row in range(self.NUM_ROWS - 1, -1, -1):
             win = self.get_row_winner(row)
@@ -123,14 +130,14 @@ class ConnectFour(Game):
         return moves
 
     def get_current_player(self) -> Player:
-        self.current_player
+        return self.current_player
 
     def create_move_from_str(self, move_str: str) -> ConnectFourMove:
         return ConnectFourMove(int(move_str))
 
     def is_valid_move(self, move: ConnectFourMove) -> bool:
         return move.column >= 0 and move.column < self.NUM_COLUMNS
-        
+
     def perform_move(self, move: ConnectFourMove) -> None:
         if self.is_valid_move(move):
             col = move.column
@@ -142,7 +149,7 @@ class ConnectFour(Game):
             self.current_player = Player.SECOND if self.current_player == Player.FIRST else Player.FIRST
 
     def get_copy(self) -> Any:
-        return copy.copy(self)
+        return copy.deepcopy(self)
 
     def get_neural_net_description_of_state(self) -> Any:
         # TODO: Implement
