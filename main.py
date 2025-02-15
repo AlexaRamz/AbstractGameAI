@@ -1,10 +1,11 @@
 
 from Games.ConnectFour import ConnectFour
 from GameRunner import GameRunner
-from Models.RandomModel import RandomModel
+from Models.MCTSModel import MCTSModel
+from Models.HumanModel import HumanModel
 
 game = ConnectFour()
-first = RandomModel()
-second = RandomModel()
+first = MCTSModel()
+second = HumanModel()
 runner = GameRunner(game, first, second)
-winner = runner.play()
+winner = runner.play(show=True)

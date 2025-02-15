@@ -1,14 +1,27 @@
 from typing import Any, List, Optional
-from Games.Game import Game, Player
+from Games.Game import Game, Player, Move
 import copy
 
-class ConnectFourMove:
+class ConnectFourMove(Move):
     def __init__(self, column: int):
         self.column = column
+
+    def get_description(self) -> str:
+        return str(self.column)
+
+    def __eq__(self, other):
+        return isinstance(other, ConnectFourMove) and self.column == other.column
+
+    def __hash__(self):
+        return hash(self.column)
+
+    def __repr__(self):
+        return f"ConnectFourMove({self.column})"
 
 class ConnectFour(Game):
     
     def __init__(self):
+        self.previous_move = None
         self.NUM_ROWS, self.NUM_COLUMNS = (6, 7)
         self.board = [[-1 for i in range(self.NUM_COLUMNS)] for j in range(self.NUM_ROWS)]
         self.current_player = Player.FIRST
@@ -139,6 +152,7 @@ class ConnectFour(Game):
         return move.column >= 0 and move.column < self.NUM_COLUMNS
 
     def perform_move(self, move: ConnectFourMove) -> None:
+        self.previous_move = move
         if self.is_valid_move(move):
             col = move.column
             for row in range(self.NUM_ROWS - 1, -1, -1):
@@ -147,6 +161,12 @@ class ConnectFour(Game):
                     self.movesMade += 1
                     break
             self.current_player = Player.SECOND if self.current_player == Player.FIRST else Player.FIRST
+
+    def get_description(self) -> str:
+        return self.get_display_text()
+
+    def get_opponent_move(self) -> Optional[Move]:
+        return self.previous_move
 
     def get_copy(self) -> Any:
         return copy.deepcopy(self)

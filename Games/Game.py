@@ -9,11 +9,16 @@ class Player(Enum):
     FIRST = 0
     SECOND = 1
 
+# Each game can have a different Move type
+class Move(ABC):
+
+    @abstractmethod
+    def get_description(self) -> str:
+        # A string describing the move
+        pass
+
 # A Game defines a unified API for all games that we will be testing
 class Game(ABC):
-
-    # Each game can have a different Move type
-    Move = TypeVar("Move")
 
     @abstractmethod
     def get_winner(self) -> Optional[Player]:
@@ -25,6 +30,16 @@ class Game(ABC):
     def get_possible_moves(self) -> List[Move]:
         # returns a list of all possible moves for the current player
         # empty if game is over
+        pass
+
+    @abstractmethod
+    def get_description(self) -> str:
+        # returns the string representation of the game state
+        pass
+
+    @abstractmethod
+    def get_opponent_move(self) -> Optional[Move]:
+        # returns the move the opponent made, if any
         pass
 
     @abstractmethod
