@@ -16,24 +16,17 @@ class HumanModel(Model):
 
     def take_move(self):
         assert(self.game.get_current_player() == self.player)
-        moves = self.game.get_possible_moves()
-        for index in range(len(moves)):
-            print(str(index) + " " + moves[index].get_description())
-        index = self.read_input(len(moves))
-        move = moves[index]
-        self.game.perform_move(move)
 
-    def read_input(self, count) -> int:
-        index = self.read_int()
-        while index is None or index < 0 or index >= count:
-            print("Invalid index, try again.")
-            index = self.read_int()
-        return index
+        input_str = input("Enter the move you would like to make (type '?' for list of possible moves): ")
+        if input_str == "?":
+            # List possible moves
+            moves = self.game.get_possible_moves()
+            for move in moves:
+                print(move.get_description())
+            self.take_move()
+            return
 
-    def read_int(self) -> Optional[int]:
-        response = input("Enter the index of the move you would like to make.")
-        try:
-            value = int(response)
-        except ValueError:
-            value = None
-        return value
+        success = self.game.perform_move_from_str(input_str)
+        if success == False:
+            print("Input was invalid or move could not be made. Try again.")
+            self.take_move()
