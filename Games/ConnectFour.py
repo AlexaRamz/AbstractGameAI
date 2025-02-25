@@ -1,6 +1,7 @@
 from typing import Any, List, Optional
 from Games.Game import Game, Player, Move
 import copy
+import numpy as np
 
 class ConnectFourMove(Move):
     def __init__(self, column: int):
@@ -18,73 +19,28 @@ class ConnectFourMove(Move):
     def __repr__(self):
         return f"ConnectFourMove({self.column})"
 
+EMPTY = -1
+NUM_ROWS, NUM_COLUMNS = 6, 7
+WINDOW_LENGTH = 4
+
+# Scores
+WIN_SCORE = 100
+CENTER_MULTIPLIER = 3
+CONNECT_THREE = 5
+CONNECT_TWO = 2
+OPPONENT_THREE = -4
+
 class ConnectFour(Game):
     
     def __init__(self):
         self.previous_move = None
-        self.NUM_ROWS, self.NUM_COLUMNS = (6, 7)
-        self.board = [[-1 for i in range(self.NUM_COLUMNS)] for j in range(self.NUM_ROWS)]
+        self.board = np.full((NUM_ROWS, NUM_COLUMNS), EMPTY)
         self.current_player = Player.FIRST
         self.movesMade = 0
 
-    def get_row_winner(self, row: int) -> int:
-        color = -1
-        count = 0
-
-        for slot in self.board[row]:
-            if slot != color:
-                color = slot
-                count = 1
-            elif slot == color and slot != -1:
-                count += 1
-            if count == 4:
-                return color
-        return -1
-    
-    def get_column_winner(self, col: int) -> int:
-        color = -1
-        count = 0
-
-        for row in range(self.NUM_ROWS - 1, -1, -1):
-            slot = self.board[row][col]
-            if slot != color:
-                color = slot
-                count = 1
-            elif slot == color and slot != -1:
-                count += 1
-            if count == 4:
-                return color
-        return -1
-    
-    def get_diagonal_winner(self, row_start: int, column_start: int, mainDiagonal: bool):
-        row = row_start
-        col = column_start
-
-        color = -1
-        count = 0
-
-        while row >= 0 and row < self.NUM_ROWS and col >= 0 and col < self.NUM_COLUMNS:
-            slot = self.board[row][col]
-
-            if slot != color:
-                color = slot
-                count = 1
-            elif slot == color and slot != -1:
-                count += 1
-            
-            if count == 4:
-                return color
-            
-            if mainDiagonal:
-                row += 1
-            else:
-                row -= 1
-            col += 1
-        return -1
-
-    def game_over(self):    
+    def is_game_over(self):    
         # Check if no more moves can be made
-        if self.movesMade == self.NUM_COLUMNS * self.NUM_ROWS:
+        if self.movesMade == NUM_COLUMNS * NUM_ROWS:
             return True
                 
         # Check if there is a winner
@@ -92,75 +48,147 @@ class ConnectFour(Game):
             return True
 
         return False
+
+    # Adapted from https://roboticsproject.readthedocs.io/en/latest/ConnectFourAlgorithm.html
+    # https://github.com/kupshah/Connect-Four/blob/master/board.py
+    def score_position(self, piece: Player) -> int:
+        # Score the board positions for the current player
+        score = 0
+
+        # Place greater importance on moves in the center column
+        center_array = self.board[:, NUM_COLUMNS // 2]
+        center_count = np.sum(center_array == piece.value)
+        score += center_count * 3
+
+        # Score horizontal positions
+        for r in range(NUM_ROWS):
+            for c in range(NUM_COLUMNS - 3):
+                # Create a horizontal window of 4
+                window = self.board[r, c:c + WINDOW_LENGTH]
+                score += self.evaluate_window(window, piece)
+    
+        # Score vertical positions
+        for c in range(NUM_COLUMNS):
+            for r in range(NUM_ROWS - 3): # 
+                # Create a vertical window of 4
+                window = self.board[r:r + WINDOW_LENGTH, c]
+                score += self.evaluate_window(window, piece)
+    
+        # Score positive diagonals
+        for r in range(NUM_ROWS - 3):
+            for c in range(NUM_COLUMNS - 3):
+                # Create a positive diagonal window of 4
+                window = np.array(self.board[r + i][c + i] for i in range(WINDOW_LENGTH))
+                score += self.evaluate_window(window, piece)
+    
+        # Score negative diagonals
+        for r in range(NUM_ROWS - 3):
+            for c in range(NUM_COLUMNS - 3):
+                # Create a negative diagonal window of 4
+                window = np.array(self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH))
+                score += self.evaluate_window(window, piece)
+
+        return score
+
+    def evaluate_window(self, window, piece: Player):
+        score = 0
+
+        # Switch scoring based on turn
+        opp_piece = Player.FIRST
+        if piece == Player.FIRST:
+            opp_piece = Player.SECOND
+
+        piece_count = np.sum(window == piece.value)
+        empty_count = np.sum(window == EMPTY)
+        opp_count = np.sum(window == opp_piece.value)
+
+        # Prioritise a winning move
+        # Minimax makes this less important
+        if piece_count == 4:
+            score += WIN_SCORE
+        # Make connecting 3 second priority
+        elif piece_count == 3 and empty_count == 1:
+            score += CONNECT_THREE
+        # Make connecting 2 third priority
+        elif piece_count == 2 and empty_count == 2:
+            score += CONNECT_TWO
+        # Prioritise blocking an opponent's winning move (but not over bot winning)
+        # Minimax makes this less important
+        if opp_count == 3 and empty_count == 1:
+            score += OPPONENT_THREE
+
+        return score
+
+    def get_window_winner(self, window) -> Optional[Player]:
+        if np.sum(window == Player.FIRST.value) == 4: return Player.FIRST
+        elif np.sum(window == Player.SECOND.value) == 4: return Player.SECOND
+        return None
         
     def get_winner(self) -> Optional[Player]:
-        color = self.get_winner_color()
-        if color is None: return None
-        if color == 0: return Player.FIRST
-        if color == 1: return Player.SECOND
-        assert False
-
-    def get_winner_color(self) -> int:
         # Check rows
-        for row in range(self.NUM_ROWS - 1, -1, -1):
-            win = self.get_row_winner(row)
-            if win != -1: return win
-        
+        for r in range(NUM_ROWS):
+            for c in range(NUM_COLUMNS - 3):
+                # Create a horizontal window of 4
+                window = self.board[r, c:c + WINDOW_LENGTH]
+                winner = self.get_window_winner(window)
+                if winner is not None: return winner
+    
         # Check columns
-        for col in range(self.NUM_COLUMNS):
-            win = self.get_column_winner(col)
-            if win != -1: return win
-        
-        # Check diagonals
-        
-        # Starting points along the top/bottom
-        for col in range(self.NUM_COLUMNS - 3):
-            # Main diagonal (top to bottom, left to right)
-            win = self.get_diagonal_winner(0, col, True)
-            if win != -1: return win
-            
-            # Inverse diagonal (bottom to top, left to right)
-            win = self.get_diagonal_winner(self.NUM_ROWS - 1, col, False)
-            if win != -1: return win
-        
-        # Starting points along the left
-        for row in range(1, self.NUM_ROWS - 3):
-            # Main diagonal (left to right, top to bottom)
-            win = self.get_diagonal_winner(row, 0, True)
-            if win != -1: return win
-            
-            # Inverse diagonal (right to left, top to bottom)
-            win = self.get_diagonal_winner(self.NUM_ROWS - 1 - row, 0, False)
-            if win != -1: return win
-        
-        return None # No winner found
+        for c in range(NUM_COLUMNS):
+            for r in range(NUM_ROWS - 3): # 
+                # Create a vertical window of 4
+                window = self.board[r:r + WINDOW_LENGTH, c]
+                winner = self.get_window_winner(window)
+                if winner is not None: return winner
+    
+        # Check positive diagonals
+        for r in range(NUM_ROWS - 3):
+            for c in range(NUM_COLUMNS - 3):
+                # Create a positive diagonal window of 4
+                window = np.array(self.board[r + i][c + i] for i in range(WINDOW_LENGTH))
+                winner = self.get_window_winner(window)
+                if winner is not None: return winner
+    
+        # Check negative diagonals
+        for r in range(NUM_ROWS - 3):
+            for c in range(NUM_COLUMNS - 3):
+                # Create a negative diagonal window of 4
+                window = np.array(self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH))
+                winner = self.get_window_winner(window)
+                if winner is not None: return winner
+                    
+        return None
 
     def get_possible_moves(self) -> List[ConnectFourMove]:
         moves = []
-        for col in range(self.NUM_COLUMNS):
-            if self.board[0][col] == -1:
+        for col in range(NUM_COLUMNS):
+            if self.board[0][col] == EMPTY:
                 moves.append(ConnectFourMove(col))
         return moves
 
     def get_current_player(self) -> Player:
         return self.current_player
 
-    def create_move_from_str(self, move_str: str) -> ConnectFourMove:
-        return ConnectFourMove(int(move_str))
+    def perform_move_from_str(self, move_str: str) -> bool:
+        if move_str.isdigit():
+            column = int(move_str)
+            if column >= 0 and column < NUM_COLUMNS:
+                success = self.perform_move(ConnectFourMove(column))
+                return success
+        return False
 
-    def is_valid_move(self, move: ConnectFourMove) -> bool:
-        return move.column >= 0 and move.column < self.NUM_COLUMNS
+    def perform_move(self, move: ConnectFourMove) -> bool:
+        assert move.column >= 0 and move.column < NUM_COLUMNS
 
-    def perform_move(self, move: ConnectFourMove) -> None:
-        self.previous_move = move
-        if self.is_valid_move(move):
-            col = move.column
-            for row in range(self.NUM_ROWS - 1, -1, -1):
-                if self.board[row][col] == -1:
-                    self.board[row][col] = self.current_player.value
-                    self.movesMade += 1
-                    break
-            self.current_player = Player.SECOND if self.current_player == Player.FIRST else Player.FIRST
+        col = move.column
+        for row in range(NUM_ROWS - 1, -1, -1):
+            if self.board[row][col] == EMPTY:
+                self.board[row][col] = self.current_player.value
+                self.movesMade += 1
+                self.previous_move = move
+                self.current_player = Player.SECOND if self.current_player == Player.FIRST else Player.FIRST
+                return True
+        return False
 
     def get_description(self) -> str:
         return self.get_display_text()
@@ -177,13 +205,13 @@ class ConnectFour(Game):
 
     def get_display_text(self):
         board_str = ""
-        for row in range(self.NUM_ROWS):
-            for col in range(self.NUM_COLUMNS):
-                if col != -1:
+        for row in range(NUM_ROWS):
+            for col in range(NUM_COLUMNS):
+                if col != EMPTY:
                     board_str += '|'
-                slot = self.board[row][col] if self.board[row][col] != -1 else " "
+                slot = self.board[row][col] if self.board[row][col] != EMPTY else " "
                 board_str += f" {slot} "
             board_str += '\n'
-            if row != self.NUM_ROWS - 1:
-                board_str += '-' * (self.NUM_COLUMNS * 3 + self.NUM_COLUMNS - 1) + '\n'
+            if row != NUM_ROWS - 1:
+                board_str += '-' * (NUM_COLUMNS * 3 + NUM_COLUMNS - 1) + '\n'
         return board_str

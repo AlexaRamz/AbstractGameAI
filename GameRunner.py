@@ -16,7 +16,7 @@ class GameRunner:
         # Play as many turns of the game as are required to determine a winner
         # The winning player is returned
         if show: print(self.game.get_description())
-        while self.game.get_winner() is None:
+        while not self.game.is_game_over():
             current = self.game.get_current_player()
             if current == Player.FIRST:
                 self.player_one.take_move()

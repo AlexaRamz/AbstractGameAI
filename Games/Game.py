@@ -23,7 +23,17 @@ class Game(ABC):
     @abstractmethod
     def get_winner(self) -> Optional[Player]:
         # returns the winner of the game
-        # None if the game is not over
+        # None if the game is not over or has ended in a tie
+        pass
+
+    @abstractmethod
+    def is_game_over(self) -> bool:
+        # returns whether the game is over (no moves possible for either player)
+        pass
+
+    @abstractmethod
+    def score_position(self, player: Player) -> bool:
+        # returns an evaluation of the board positions for this player
         pass
 
     @abstractmethod
@@ -51,6 +61,12 @@ class Game(ABC):
     def perform_move(self, move: Move) -> None:
         # performs a move and switches to the other players turn
         # to construct a move, call get_possible_moves
+        pass
+
+    @abstractmethod
+    def perform_move_from_str(self, move: Move) -> bool:
+        # performs a move from an input string
+        # returns true if the string is valid and the move was successful
         pass
 
     @abstractmethod
