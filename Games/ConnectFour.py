@@ -78,14 +78,14 @@ class ConnectFour(Game):
         for r in range(NUM_ROWS - 3):
             for c in range(NUM_COLUMNS - 3):
                 # Create a positive diagonal window of 4
-                window = np.array(self.board[r + i][c + i] for i in range(WINDOW_LENGTH))
+                window = np.array([self.board[r + i][c + i] for i in range(WINDOW_LENGTH)])
                 score += self.evaluate_window(window, piece)
     
         # Score negative diagonals
         for r in range(NUM_ROWS - 3):
             for c in range(NUM_COLUMNS - 3):
                 # Create a negative diagonal window of 4
-                window = np.array(self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH))
+                window = np.array([self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH)])
                 score += self.evaluate_window(window, piece)
 
         return score
