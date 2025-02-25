@@ -125,6 +125,7 @@ class ConnectFour(Game):
         return None
         
     def get_winner(self) -> Optional[Player]:
+        print("getting winner")
         # Check rows
         for r in range(NUM_ROWS):
             for c in range(NUM_COLUMNS - 3):
@@ -145,7 +146,7 @@ class ConnectFour(Game):
         for r in range(NUM_ROWS - 3):
             for c in range(NUM_COLUMNS - 3):
                 # Create a positive diagonal window of 4
-                window = np.array(self.board[r + i][c + i] for i in range(WINDOW_LENGTH))
+                window = np.array([self.board[r + i][c + i] for i in range(WINDOW_LENGTH)])
                 winner = self.get_window_winner(window)
                 if winner is not None: return winner
     
@@ -153,7 +154,7 @@ class ConnectFour(Game):
         for r in range(NUM_ROWS - 3):
             for c in range(NUM_COLUMNS - 3):
                 # Create a negative diagonal window of 4
-                window = np.array(self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH))
+                window = np.array([self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH)])
                 winner = self.get_window_winner(window)
                 if winner is not None: return winner
                     
