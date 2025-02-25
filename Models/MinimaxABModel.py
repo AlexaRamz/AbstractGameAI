@@ -1,5 +1,6 @@
-from Games.Game import Game, Player
+from Games.Game import Game, Player, Move
 from Models.Model import Model
+from typing import List
 
 
 class MinimaxABModel(Model):
@@ -41,7 +42,7 @@ class MinimaxABModel(Model):
             best = self.MIN
      
             # Recur for each possible move
-            moves = self.game.get_possible_moves()
+            moves = game_state.get_possible_moves()
             assert len(moves) > 0, "Model has no moves to select but game is not over"
             best_move = moves[0]
             # For each possible move, create a new copy of game state and make the move
@@ -64,7 +65,7 @@ class MinimaxABModel(Model):
             best = self.MAX
      
             # Recur for each possible move
-            moves = self.game.get_possible_moves()
+            moves: List[Move] = game_state.get_possible_moves()
             best_move = moves[0]
             # For each possible move, create a new copy of game state and make the move
             for m in moves:
