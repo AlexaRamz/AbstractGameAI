@@ -11,6 +11,14 @@ class ChessMove(Move):
     def get_description(self) -> str:
         return self.move.uci()
 
+PIECE_VALUES = {
+    chess.PAWN: 1,
+    chess.KNIGHT: 3,
+    chess.BISHOP: 3,
+    chess.ROOK: 5,
+    chess.QUEEN: 9,
+    chess.KING: 0
+}
 
 class Chess(Game):
 
@@ -30,7 +38,7 @@ class Chess(Game):
         return [ChessMove(move) for move in self.board.legal_moves]
 
     def get_description(self) -> str:
-        return f"{self.board}"
+        return f"{self.board}\n"
 
     def get_opponent_move(self) -> Optional[Move]:
         return self.previous_move
@@ -51,3 +59,23 @@ class Chess(Game):
     def get_neural_net_description_of_state(self) -> Any:
         # TODO: Implement
         pass
+
+    def is_game_over(self) -> bool:
+        return self.board.outcome() is not None
+
+    def score_position(self, player: Player) -> int:
+        score = 0
+        for piece_type, value in PIECE_VALUES.items():
+            score += len(self.board.pieces(piece_type, chess.WHITE)) * value
+            score -= len(self.board.pieces(piece_type, chess.BLACK)) * value
+        if player == Player.SECOND:
+            score *= -1
+        return score
+
+    def perform_move_from_str(self, move: str) -> bool:
+        try:
+            move = chess.Move.from_uci(move)
+            self.perform_move(ChessMove(move))
+            return True
+        except ValueError:
+            return False

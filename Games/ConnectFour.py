@@ -125,7 +125,6 @@ class ConnectFour(Game):
         return None
         
     def get_winner(self) -> Optional[Player]:
-        print("getting winner")
         # Check rows
         for r in range(NUM_ROWS):
             for c in range(NUM_COLUMNS - 3):

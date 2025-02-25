@@ -32,7 +32,7 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def score_position(self, player: Player) -> bool:
+    def score_position(self, player: Player) -> int:
         # returns an evaluation of the board positions for this player
         pass
 
