@@ -45,12 +45,11 @@ class MinimaxABModel(Model):
             moves = game_state.get_possible_moves()
             assert len(moves) > 0, "Model has no moves to select but game is not over"
             best_move = moves[0]
-            # For each possible move, create a new copy of game state and make the move
+            # Take each possible move, then undo it
             for m in moves:
-                new_game_state = game_state.get_copy()
-                new_game_state.perform_move(m)
-                val, _move = self.minimax(depth + 1, new_game_state, False, alpha, beta) 
-
+                game_state.perform_move(m)
+                val, _move = self.minimax(depth + 1, game_state, False, alpha, beta)
+                game_state.undo_move()
                 if val > best:
                     best_move = m
                 best = max(best, val) 
@@ -67,12 +66,11 @@ class MinimaxABModel(Model):
             # Recur for each possible move
             moves: List[Move] = game_state.get_possible_moves()
             best_move = moves[0]
-            # For each possible move, create a new copy of game state and make the move
+            # Take each possible move, then undo it
             for m in moves:
-                new_game_state = game_state.get_copy()
-                new_game_state.perform_move(m)
-                val, _ = self.minimax(depth + 1, new_game_state, True, alpha, beta) 
-
+                game_state.perform_move(m)
+                val, _ = self.minimax(depth + 1, game_state, True, alpha, beta)
+                game_state.undo_move()
                 if val < best:
                     best_move = m
                 best = min(best, val) 

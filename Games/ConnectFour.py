@@ -33,7 +33,7 @@ OPPONENT_THREE = -4
 class ConnectFour(Game):
     
     def __init__(self):
-        self.previous_move = None
+        self.previous_moves: List[ConnectFourMove] = []
         self.board = np.full((NUM_ROWS, NUM_COLUMNS), EMPTY)
         self.current_player = Player.FIRST
         self.movesMade = 0
@@ -185,7 +185,7 @@ class ConnectFour(Game):
             if self.board[row][col] == EMPTY:
                 self.board[row][col] = self.current_player.value
                 self.movesMade += 1
-                self.previous_move = move
+                self.previous_moves.append(move)
                 self.current_player = Player.SECOND if self.current_player == Player.FIRST else Player.FIRST
                 return True
         return False
@@ -194,7 +194,8 @@ class ConnectFour(Game):
         return self.get_display_text()
 
     def get_opponent_move(self) -> Optional[Move]:
-        return self.previous_move
+        if len(self.previous_moves) == 0: return None
+        return self.previous_moves[-1]
 
     def get_copy(self) -> Any:
         return copy.deepcopy(self)
@@ -215,3 +216,17 @@ class ConnectFour(Game):
             if row != NUM_ROWS - 1:
                 board_str += '-' * (NUM_COLUMNS * 3 + NUM_COLUMNS - 1) + '\n'
         return board_str
+
+    def undo_move(self):
+        assert(len(self.previous_moves) > 0)
+        move = self.previous_moves.pop()
+        self.current_player = Player.FIRST if self.current_player == Player.SECOND else Player.SECOND
+        self.movesMade -= 1
+        for row in range(NUM_ROWS):
+            if self.board[row][move.column] != EMPTY:
+                expected = 0 if self.current_player == Player.FIRST else 1
+                assert self.board[row][move.column] == expected
+                self.board[row][move.column] = EMPTY
+                return
+        assert False
+

@@ -64,6 +64,12 @@ class Game(ABC):
         pass
 
     @abstractmethod
+    def undo_move(self) -> None:
+        # Undoes the most recent move
+        # This may you can explore a hypothetical without copying
+        pass
+
+    @abstractmethod
     def perform_move_from_str(self, move: Move) -> bool:
         # performs a move from an input string
         # returns true if the string is valid and the move was successful

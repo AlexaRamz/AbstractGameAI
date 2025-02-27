@@ -24,7 +24,6 @@ class Chess(Game):
 
     def __init__(self, board: chess.Board = chess.Board()):
         self.board = board
-        self.previous_move: Optional[ChessMove] = None
 
     def get_winner(self) -> Optional[Player]:
         if self.board.outcome() is None: return None
@@ -41,7 +40,7 @@ class Chess(Game):
         return f"{self.board}\n"
 
     def get_opponent_move(self) -> Optional[Move]:
-        return self.previous_move
+        return ChessMove(self.board.peek())
 
     def get_current_player(self) -> Player:
         player = self.board.turn
@@ -50,7 +49,6 @@ class Chess(Game):
         assert False
 
     def perform_move(self, move: ChessMove) -> None:
-        self.previous_move = move
         self.board.push(move.move)
 
     def get_copy(self) -> Any:
@@ -79,3 +77,6 @@ class Chess(Game):
             return True
         except ValueError:
             return False
+
+    def undo_move(self) -> None:
+        self.board.pop()
