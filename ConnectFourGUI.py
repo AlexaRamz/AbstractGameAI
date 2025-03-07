@@ -44,7 +44,6 @@ class ConnectFourGUI:
     try:
         board_data = self.board_queue.get_nowait()
         self.update_board(board_data)
-        print("update")
     except queue.Empty:
         pass
     self.root.after(10, self.update_gui)
@@ -84,8 +83,5 @@ class ConnectFourGUI:
     # TODO
     print(text)
 
-  def close_window(self):
-    self.root.destroy()
-
   def on_closing(self):
-    self.controller.stop_game()
+    self.root.destroy()
