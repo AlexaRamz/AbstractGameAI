@@ -46,7 +46,7 @@ class GameSelectionGUI:
 
     opponents = self.controller.get_opponents()
     for opponent in opponents:
-      opponent_btn = tk.Button(self.opponent_select_frame, text=opponent, font=("Arial", 18), command=lambda: self.select_opponent(opponent))
+      opponent_btn = tk.Button(self.opponent_select_frame, text=opponent, font=("Arial", 18), command=lambda opp=opponent: self.select_opponent(opp))
       opponent_btn.pack()
 
     back_btn = tk.Button(self.opponent_select_frame, text="Back", font=("Arial", 18), command=self.show_game_selection)

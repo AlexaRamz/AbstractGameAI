@@ -51,13 +51,13 @@ class ConnectFour(Game):
 
     # Adapted from https://roboticsproject.readthedocs.io/en/latest/ConnectFourAlgorithm.html
     # https://github.com/kupshah/Connect-Four/blob/master/board.py
-    def score_position(self, piece: Player) -> int:
+    def score_position(self, player: Player) -> int:
         # Score the board positions for the current player
         score = 0
 
         # Place greater importance on moves in the center column
         center_array = self.board[:, NUM_COLUMNS // 2]
-        center_count = np.sum(center_array == piece.value)
+        center_count = np.sum(center_array == player.value)
         score += center_count * 3
 
         # Score horizontal positions
@@ -65,40 +65,41 @@ class ConnectFour(Game):
             for c in range(NUM_COLUMNS - 3):
                 # Create a horizontal window of 4
                 window = self.board[r, c:c + WINDOW_LENGTH]
-                score += self.evaluate_window(window, piece)
+                score += self.evaluate_window(window, player)
     
         # Score vertical positions
         for c in range(NUM_COLUMNS):
             for r in range(NUM_ROWS - 3): # 
                 # Create a vertical window of 4
                 window = self.board[r:r + WINDOW_LENGTH, c]
-                score += self.evaluate_window(window, piece)
+                score += self.evaluate_window(window, player)
     
         # Score positive diagonals
         for r in range(NUM_ROWS - 3):
             for c in range(NUM_COLUMNS - 3):
                 # Create a positive diagonal window of 4
                 window = np.array([self.board[r + i][c + i] for i in range(WINDOW_LENGTH)])
-                score += self.evaluate_window(window, piece)
+                score += self.evaluate_window(window, player)
     
         # Score negative diagonals
         for r in range(NUM_ROWS - 3):
             for c in range(NUM_COLUMNS - 3):
                 # Create a negative diagonal window of 4
                 window = np.array([self.board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH)])
-                score += self.evaluate_window(window, piece)
-
+                score += self.evaluate_window(window, player)
+        if player == Player.SECOND:
+            score *= -1
         return score
 
-    def evaluate_window(self, window, piece: Player):
+    def evaluate_window(self, window, player: Player):
         score = 0
 
         # Switch scoring based on turn
         opp_piece = Player.FIRST
-        if piece == Player.FIRST:
+        if player == Player.FIRST:
             opp_piece = Player.SECOND
 
-        piece_count = np.sum(window == piece.value)
+        piece_count = np.sum(window == player.value)
         empty_count = np.sum(window == EMPTY)
         opp_count = np.sum(window == opp_piece.value)
 

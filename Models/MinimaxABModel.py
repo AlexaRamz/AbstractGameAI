@@ -21,7 +21,8 @@ class MinimaxABModel(Model):
 
     def take_move(self):
         assert(self.game.get_current_player() == self.player)
-        _best, selected_move = self.minimax(0, self.game, True, self.MIN, self.MAX)
+        game_state_copy = self.game.get_copy()
+        _best, selected_move = self.minimax(0, game_state_copy, True, self.MIN, self.MAX)
         self.game.perform_move(selected_move)
      
     def minimax(self, depth, game_state, maximizingPlayer, alpha, beta): 
@@ -35,7 +36,10 @@ class MinimaxABModel(Model):
             else: # Loss
                 return -100, 0
         elif depth == self.MAX_DEPTH:
-            return game_state.score_position(self.player), 0
+            score = game_state.score_position(self.player)
+            if self.player == Player.SECOND:
+                score *= -1 # Ensure score has consistent sign whether first or second player
+            return score, 0
      
         if maximizingPlayer: 
           
@@ -48,7 +52,7 @@ class MinimaxABModel(Model):
             # Take each possible move, then undo it
             for m in moves:
                 game_state.perform_move(m)
-                val, _move = self.minimax(depth + 1, game_state, False, alpha, beta)
+                val, _ = self.minimax(depth + 1, game_state, False, alpha, beta)
                 game_state.undo_move()
                 if val > best:
                     best_move = m
