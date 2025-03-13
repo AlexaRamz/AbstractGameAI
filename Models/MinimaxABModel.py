@@ -7,10 +7,10 @@ class MinimaxABModel(Model):
     """
     Minimax with alpha-beta pruning
     """
-    def __init__(self):
+    def __init__(self, max_depth: int = 5):
         self.game = None
         self.player = None
-        self.MAX_DEPTH = 5
+        self.max_depth = max_depth
 
         # Initial values of Alpha and Beta 
         self.MAX, self.MIN = 1000, -1000
@@ -34,7 +34,7 @@ class MinimaxABModel(Model):
                 return 0, 0
             else: # Loss
                 return -100, 0
-        elif depth == self.MAX_DEPTH:
+        elif depth == self.max_depth:
             return game_state.score_position(self.player), 0
      
         if maximizingPlayer: 
