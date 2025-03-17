@@ -22,8 +22,8 @@ PIECE_VALUES = {
 
 class Chess(Game):
 
-    def __init__(self, board: chess.Board = chess.Board()):
-        self.board = board
+    def __init__(self, board: chess.Board = None):
+        self.board = board if board is not None else chess.Board()
 
     def get_winner(self) -> Optional[Player]:
         if self.board.outcome() is None: return None
@@ -40,6 +40,7 @@ class Chess(Game):
         return f"{self.board}\n"
 
     def get_opponent_move(self) -> Optional[Move]:
+        if len(self.board.move_stack) == 0: return None
         return ChessMove(self.board.peek())
 
     def get_current_player(self) -> Player:
