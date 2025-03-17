@@ -78,6 +78,8 @@ class Chess(Game):
             return True
         except ValueError:
             return False
+        except AssertionError:
+            return False
 
     def undo_move(self) -> None:
         self.board.pop()
