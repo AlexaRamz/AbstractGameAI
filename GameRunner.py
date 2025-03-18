@@ -1,7 +1,4 @@
 from typing import Tuple, Optional
-
-from libpasteurize.fixes.fix_getcwd import FixGetcwd
-
 from Games.Game import Game, Player
 from Models.Model import Model
 import time
