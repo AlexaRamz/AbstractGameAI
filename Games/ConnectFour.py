@@ -161,6 +161,7 @@ class ConnectFour(Game):
         return None
 
     def get_possible_moves(self) -> List[ConnectFourMove]:
+        if self.is_game_over(): return []
         moves = []
         for col in range(NUM_COLUMNS):
             if self.board[0][col] == EMPTY:

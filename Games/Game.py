@@ -36,6 +36,19 @@ class Game(ABC):
         # returns an evaluation of the board positions for this player
         pass
 
+    def get_heuristic(self) -> int:
+        # positive means good for the FIRST player, negative means good for the SECOND player
+        if self.is_game_over():
+            winner = self.get_winner()
+            if winner == Player.FIRST:
+                return +10000
+            elif winner == Player.SECOND:
+                return -10000
+            else:
+                return 0
+        else:
+            return self.score_position(Player.FIRST)
+
     @abstractmethod
     def get_possible_moves(self) -> List[Move]:
         # returns a list of all possible moves for the current player

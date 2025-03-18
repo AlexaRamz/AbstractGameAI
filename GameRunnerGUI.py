@@ -5,8 +5,8 @@ from Games.Game import Player
 from Games.ConnectFour import ConnectFour
 
 from Models.HumanModel import HumanModel
-from Models.MinimaxABModel import MinimaxABModel
-from Models.MCTSModel import MCTSModel
+from Models.Minimax import Minimax
+from Models.MCTS import MCTS
 
 import threading
 import queue
@@ -86,9 +86,9 @@ class GameRunnerGUI:
 
     def select_opponent(self, game: str):
         if game == "Minimax":
-            self.player_two = MinimaxABModel()
+            self.player_two = Minimax()
         elif game == "MCTS":
-            self.player_two = MCTSModel()
+            self.player_two = MCTS()
 
         self.main_menu.close_window()
         self.start_game_gui()
