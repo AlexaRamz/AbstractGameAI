@@ -8,21 +8,23 @@ import numpy as np
 
 from Games.Game import Game, Player
 from Models.Model import Model
+from AlphaMCTS import AlphaMCTS
 
 class AlphaZeroModel(Model):
 	def __init__(self):
 		self.game = None
 		self.player = None
-		
-		self.NN = ResNetConnect4(torch.device("cpu"))
 	
 	def set_game_and_player(self, game: Game, player: Player):
-		self.game = game # Connect4 only!!
-		self.player = None
+		self.game = game # Connect4 only right now!!
+		self.player = player
+
+		self.NN = ResNetConnect4(torch.device("cpu"))
+		self.MCTS = AlphaMCTS(self.NN, self.game)
 	
 	def take_move(self):
-		# TODO
-		pass
+		assert(self.game.get_current_player() == self.player)
+		self.MCTS.take_move()
 
 class ResNetConnect4(nn.Module):
 	def __init__(self, device):
@@ -94,7 +96,7 @@ class ResNetConnect4(nn.Module):
 		v = F.relu(self.value_bn(self.value_conv(x)))
 		v = v.view(-1, 3*6*7)
 		v = F.relu(self.value_fc(v))
-		v = F.tanh(v) # Hyperbolic tangent activation function: Ensures output is in between -1 and 1
+		v = F.tanh(self.value_head(v)) # Hyperbolic tangent activation function: Ensures output is in between -1 and 1
 
 		# policy head
 		p = F.relu(self.policy_bn(self.policy_conv(x)))
@@ -102,6 +104,13 @@ class ResNetConnect4(nn.Module):
 		p = F.relu(self.policy_head(p))
 		p = self.policy_ls(p).exp()
 		# Outputs policy: 7-valued array of numbers indicating the probabilities between 0 and 1 of choosing a given action. The highest one tells us the best action to take
+
+		# Extract float value
+		v = v.item()
+
+		# Convert policy tensor to numpy array
+		p = p.cpu().detach().flatten()
+		p = np.array([prob.numpy() for prob in p])
 
 		return v, p
 	

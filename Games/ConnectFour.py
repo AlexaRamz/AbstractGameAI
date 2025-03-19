@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 from Games.Game import Game, Player, Move
 import copy
 import numpy as np
+import torch
 
 class ConnectFourMove(Move):
     def __init__(self, column: int):
@@ -202,10 +203,6 @@ class ConnectFour(Game):
     def get_copy(self) -> Any:
         return copy.deepcopy(self)
 
-    def get_neural_net_description_of_state(self) -> Any:
-        # TODO: Implement
-        pass
-
     def get_display_text(self):
         board_str = ""
         for row in range(NUM_ROWS):
@@ -231,4 +228,19 @@ class ConnectFour(Game):
                 self.board[row][move.column] = EMPTY
                 return
         assert False
+    
+    def get_board_info(self):
+        return NUM_COLUMNS, NUM_ROWS, [Player.FIRST.value, Player.SECOND.value, EMPTY]
+    
+    def get_board(self):
+        return self.board
+    
+    def get_neural_net_description_of_state(self) -> Any:
+        encoded_state = np.stack(
+            (self.board == Player.FIRST.value, self.board == Player.SECOND.value, self.board == EMPTY) # 3 layers
+        ).astype(np.float32)
 
+        return torch.tensor(encoded_state)
+
+    def get_move_by_index(self, index: int) -> ConnectFourMove:
+        return ConnectFourMove(index)
