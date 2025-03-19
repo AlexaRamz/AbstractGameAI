@@ -48,6 +48,19 @@ class Game(ABC):
                 return 0
         else:
             return self.score_position(Player.FIRST)
+    
+    def get_value_and_terminated(self) -> int|bool:
+        if self.is_game_over():
+            winner = self.get_winner()
+            value = 0
+            if winner == Player.FIRST:
+                value = +10000
+            elif winner == Player.SECOND:
+                value =  -10000
+            print("game over")
+            return value, True
+        else:
+            return self.score_position(self.get_current_player()), False
 
     @abstractmethod
     def get_possible_moves(self) -> List[Move]:
@@ -89,7 +102,7 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def get_copy(self) -> Any:
+    def get_copy(self) -> "Game":
         # returns a copy of self
         # this is useful for trying out moves without affecting the original
         pass
@@ -98,4 +111,14 @@ class Game(ABC):
     def get_neural_net_description_of_state(self) -> Any:
         # returns a description of the current state in a format ready for the NN
         # TODO: Figure out what type to return from this
+        pass
+
+    @abstractmethod
+    def get_board_info(self) -> int | int | List[Any]:
+        # returns the width and height of the game board, and the list of all pieces that can be placed on a board space (including empty)
+        pass
+
+    @abstractmethod
+    def get_board(self):
+        """Returns the game board as a 2D numpy array"""
         pass

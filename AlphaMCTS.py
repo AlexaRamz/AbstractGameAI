@@ -2,15 +2,17 @@
 from typing import Optional, Dict
 import math
 import random
+import numpy as np
 import torch
 
 from Games.Game import Game, Player, Move
 
 class MCTSNode:
-    def __init__(self, game_state: Game, move: Optional[Move]=None, parent: Optional["MCTSNode"]=None, prior=0):
+    def __init__(self, game_state: Game, args, action_taken: int=None, parent: Optional["MCTSNode"]=None, prior=0):
         self.game_state = game_state
+        self.args = args
         self.parent = parent
-        self.move = move
+        self.action_taken = action_taken
         self.prior = prior
         
         self.children: Dict[Move: "MCTSNode"] = {}
@@ -28,23 +30,21 @@ class MCTSNode:
         )
     
     def get_ucb(self, child):
-        exploration_weight: float = 1.414
-
         if child.visit_count == 0:
             q_value = 0
         else:
             q_value = child.value_sum / child.visit_count
             if child.game_state.get_current_player() == Player.FIRST:
                 q_value = -q_value
-        return q_value + exploration_weight * (math.sqrt(self.visit_count) / (child.visit_count + 1)) * child.prior
+        return q_value + self.args["exploration_weight"] * (math.sqrt(self.visit_count) / (child.visit_count + 1)) * child.prior
 
     def expand(self, policy):
-        for actionIndex, prob in enumerate(policy):
-            move = self.game_state.get_move_by_index(actionIndex)
+        for action_taken, prob in enumerate(policy):
+            move = self.game_state.get_move_by_index(action_taken)
             if move in self.game_state.get_possible_moves():
                 child_state = self.game_state.get_copy()
                 child_state.perform_move(move)
-                child = MCTSNode(child_state, move, self, prob)
+                child = MCTSNode(child_state, self.args, action_taken, self, prob)
                 self.children[move] = child
 
     def update(self, value):
@@ -52,10 +52,11 @@ class MCTSNode:
         self.visit_count += 1
 
 class AlphaMCTS():
-    def __init__(self, model, game: Game):
+    def __init__(self, game: Game, model, args):
         self.game = game
         self.model = model
-        self.root = MCTSNode(game, move=None, parent=None)
+        self.args = args
+        self.root = None
 
     def take_move(self):
         opp_move = self.game.get_opponent_move()
@@ -63,15 +64,17 @@ class AlphaMCTS():
             if opp_move in self.root.children.keys():
                 self.root = self.root.children[opp_move]
             else:
-                self.root = MCTSNode(self.game, move=opp_move, parent=None)
-        move = self.search()
+                self.root = MCTSNode(self.game, self.args)
+        action_probs = self.search(self.game)
+        action_index = np.argmax(action_probs)
+        move = self.game.get_move_by_index(action_index)
         self.game.perform_move(move)
         self.root = self.root.children[move]
     
-    def search(self, iterations: int = 500) -> Move:
-        self.root = MCTSNode(self.game)
+    def search(self, game_state) -> Move:
+        self.root = MCTSNode(game_state, self.args)
         
-        for i in range(iterations):
+        for _search in range(self.args["num_searches"]):
             node = self.root
 
             # Selection
@@ -86,10 +89,17 @@ class AlphaMCTS():
                 elif winner == Player.SECOND:
                     value = -10000
             else:
-                value, policy = self.model.forward(self.game.get_neural_net_description_of_state()) # TODO
+                policy, value = self.model(
+                    torch.tensor(node.game_state.get_neural_net_description_of_state(), device=self.model.device).unsqueeze(0)
+                )
+                policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().flatten().numpy()
+
                 # policy = [0.1, 0.1, 0.2, 0.4, 0.2, 0.1, 0.1]
                 # random.shuffle(policy)
                 # value = node.game_state.score_position(node.game_state.get_current_player())
+                
+                # Extract float value
+                value = value.item()
 
                 # Expansion
                 node.expand(policy)
@@ -97,7 +107,14 @@ class AlphaMCTS():
             # Backpropagation
             self.backpropagate(node, value)
 
-        return max(self.root.children, key=lambda move: self.root.children[move].visit_count)
+        action_probs = np.zeros(self.game.get_action_size())
+        for child in self.root.children.values():
+            action_probs[child.action_taken] = child.visit_count
+
+        total_prob =  np.sum(action_probs)
+        if total_prob > 0:
+            action_probs /= total_prob
+        return action_probs
 
     def backpropagate(self, node: MCTSNode, value: float):
         while node is not None:

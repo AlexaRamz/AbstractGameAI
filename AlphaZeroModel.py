@@ -2,124 +2,131 @@
 # Alpha Go Zero (Training): https://www.youtube.com/watch?v=5UYA-V2a3cc
 # AlphaZero (Complete): https://www.youtube.com/watch?v=wuSQpLinRB4
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import random
+from tqdm import trange
 
 from Games.Game import Game, Player
 from Models.Model import Model
 from AlphaMCTS import AlphaMCTS
+from ResNet import ResNet
 
 class AlphaZeroModel(Model):
 	def __init__(self):
 		self.game = None
 		self.player = None
+		self.args = {
+			'exploration_weight': 1.414,
+			'num_searches': 60,
+			'num_iterations': 8,
+			'num_selfPlay_iterations': 10,
+			'num_epochs': 4,
+			'batch_size': 64
+		}
+		
+		self.num_player1_wins = 0
+		self.num_player2_wins = 0
 	
 	def set_game_and_player(self, game: Game, player: Player):
 		self.game = game # Connect4 only right now!!
 		self.player = player
 
-		self.NN = ResNetConnect4(torch.device("cpu"))
-		self.MCTS = AlphaMCTS(self.NN, self.game)
+		self.model = ResNet(self.game, 7, 2, torch.device('cpu'))
+		self.mcts = AlphaMCTS(self.game, self.model, self.args)
+		self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 	
 	def take_move(self):
 		assert(self.game.get_current_player() == self.player)
-		self.MCTS.take_move()
+		self.mcts.take_move()
 
-class ResNetConnect4(nn.Module):
-	def __init__(self, device):
-		super().__init__()
-		self.device = device
-		# define the layers themselves
+	def selfPlay(self):
+		memory = []
+		player = Player.FIRST
+		state = self.game
 
-		# conv
-		in_channels = 3 # Passing in three boards (layers): Piece locations for player 1, player 2, and empty
-		self.initial_conv = nn.Conv2d(in_channels, 128, kernel_size=3, stride=1, padding=1, bias=True)
-		self.inital_bn = nn.BatchNorm2d(128)
+		while True:
+			print(state.get_display_text())
+			action_probs = self.mcts.search(state)
 
-		# Res block 1
-		self.res1_conv1 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-		self.res1_bn1 = nn.BatchNorm2d(128)
-		self.res1_conv2 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-		self.res1_bn2 = nn.BatchNorm2d(128)
+			memory.append((state, action_probs, player))
 
-		# Res block 2
-		self.res2_conv1 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-		self.res2_bn1 = nn.BatchNorm2d(128)
-		self.res2_conv2 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-		self.res2_bn2 = nn.BatchNorm2d(128)
+			move = None
+			if np.sum(action_probs) > 0:
+				action_index = np.random.choice(self.game.get_action_size(), p=action_probs)
+				move = self.game.get_move_by_index(action_index)
+			else:
+				move = random.choice(state.get_possible_moves())
 
-		# Note: 12-13 residual blocks for AlphaGo. Fewer for Connect4
+			state = state.get_copy()
+			state.perform_move(move)
 
-		# value head - Outputs number between -1 to +1 representing the value of the board state from player 1's persective
-		self.value_conv = nn.Conv2d(128, 3, kernel_size=1, stride=1, bias=True)
-		self.value_bn = nn.BatchNorm2d(3)
-		self.value_fc = nn.Linear(3*6*7, 32) # Fully connected layer
-		self.value_head = nn.Linear(32, 1)
-		
-		# policy head - Gives best next action
-		self.policy_conv = nn.Conv2d(128, 32, kernel_size=1, stride=1, bias=True)
-		self.policy_bn = nn.BatchNorm2d(32)
-		self.policy_head = nn.Linear(32*6*7, 7)
-		self.policy_ls = nn.LogSoftmax(dim=1) # Convert output to probabilities of choosing each action. Using instead of Softmax for training efficiency
+			value, is_terminal = state.get_value_and_terminated()
 
-		self.to(device)
+			if is_terminal:
+				returnMemory = []
+				for hist_state, hist_action_probs, hist_player in memory:
+					if value > 0: value = 1
+					elif value < 0: value = -1
+					hist_outcome = value
+					returnMemory.append((
+						hist_state.get_neural_net_description_of_state(),
+						hist_action_probs,
+						hist_outcome
+					))
+				winner = state.get_winner()
+				if winner == Player.FIRST:
+					self.num_player1_wins += 1
+				elif winner == Player.SECOND:
+					self.num_player2_wins += 1
 
-	def forward(self, x):
-		# define connections between the layers
-		# x will be shape (3, 6, 7)
-
-		# add dimension for batch size
-		# * We want to pass data in batches rather than one at a time
-		# * Just adds a dimension, not specifying it yet
-		# * Batch size will be a hyperparameter we want to tune
-		x = x.view(-1, 3, 6, 7)
-		x = self.inital_bn(self.initial_conv(x))
-		x = F.relu(x) # Activation function
-
-		# Res Block 1
-		res = x
-		x = F.relu(self.res1_bn1(self.res1_conv1(x)))
-		x = F.relu(self.res1_bn2(self.res1_conv2(x)))
-		x += res
-		x = F.relu(x)
-
-		# Res Block 2
-		res = x
-		x = F.relu(self.res2_bn1(self.res2_conv1(x)))
-		x = F.relu(self.res2_bn2(self.res2_conv2(x)))
-		x += res
-		x = F.relu(x)
-
-		# Innovation of AlphaGo Zero: Combining value head and policy head into the same network, rather than having a separate value network and policy network. The distilled information needed to make both judgements is the same.
-		# value head
-		v = F.relu(self.value_bn(self.value_conv(x)))
-		v = v.view(-1, 3*6*7)
-		v = F.relu(self.value_fc(v))
-		v = F.tanh(self.value_head(v)) # Hyperbolic tangent activation function: Ensures output is in between -1 and 1
-
-		# policy head
-		p = F.relu(self.policy_bn(self.policy_conv(x)))
-		p = p.view(-1, 32*6*7)
-		p = F.relu(self.policy_head(p))
-		p = self.policy_ls(p).exp()
-		# Outputs policy: 7-valued array of numbers indicating the probabilities between 0 and 1 of choosing a given action. The highest one tells us the best action to take
-
-		# Extract float value
-		v = v.item()
-
-		# Convert policy tensor to numpy array
-		p = p.cpu().detach().flatten()
-		p = np.array([prob.numpy() for prob in p])
-
-		return v, p
+				print(self.num_player1_wins)
+				print(self.num_player2_wins)
+				return returnMemory
+			
+			# Switch player turn
+			player = Player.SECOND if player == Player.FIRST else Player.FIRST
 	
+	def train(self, memory):
+		random.shuffle(memory)
+		for batchIdx in range(0, len(memory), self.args['batch_size']):
+			sample = memory[batchIdx:batchIdx+self.args['batch_size']]
+			state, policy_targets, value_targets = zip(*sample)
+
+			state, policy_targets, value_targets = np.array(state), np.array(policy_targets), np.array(value_targets).reshape(-1, 1)
+			
+			state = torch.tensor(state, dtype=torch.float32, device=self.model.device)
+			policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=self.model.device)
+			value_targets = torch.tensor(value_targets, dtype=torch.float32, device=self.model.device)
+			
+			out_policy, out_value = self.model(state)
+			
+			policy_loss = F.cross_entropy(out_policy, policy_targets)
+			value_loss = F.mse_loss(out_value, value_targets)
+			loss = policy_loss + value_loss
+			
+			self.optimizer.zero_grad()
+			loss.backward()
+			self.optimizer.step()
+
+	def learn(self):
+		for iteration in range(self.args['num_iterations']):
+			memory = []
+			
+			self.model.eval()
+			for _selfPlay_iteration in trange(self.args['num_selfPlay_iterations']):
+				memory += self.selfPlay()
+				
+			self.model.train()
+			for _epoch in trange(self.args['num_epochs']):
+				self.train(memory)
+			
+			torch.save(self.model.state_dict(), f"model_{iteration}.pt")
+			torch.save(self.optimizer.state_dict(), f"optimizer_{iteration}.pt")
+
 if __name__ == "__main__":
-	from torchinfo import summary
-	device = torch.device('cpu')
+	from Games.ConnectFour import ConnectFour
 
-	model = ResNetConnect4(device) # instantiate model
-	architecture_summary = summary(model, input_size=(16,3,6,7), verbose=0) # Run a dummy tensor through the model (batch size 16)
-
-	print(architecture_summary) 
-
+	alphaZero = AlphaZeroModel()
+	alphaZero.set_game_and_player(ConnectFour(), Player.FIRST)
+	alphaZero.learn()

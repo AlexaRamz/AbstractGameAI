@@ -230,7 +230,10 @@ class ConnectFour(Game):
         assert False
     
     def get_board_info(self):
-        return NUM_COLUMNS, NUM_ROWS, [Player.FIRST.value, Player.SECOND.value, EMPTY]
+        return NUM_COLUMNS, NUM_ROWS, 7
+
+    def get_actions(self):
+        return [Player.FIRST.value, Player.SECOND.value, EMPTY]
     
     def get_board(self):
         return self.board
@@ -244,3 +247,6 @@ class ConnectFour(Game):
 
     def get_move_by_index(self, index: int) -> ConnectFourMove:
         return ConnectFourMove(index)
+    
+    def get_action_size(self):
+        return 7
