@@ -9,11 +9,11 @@ To run our program, make sure you have the following packages installed:
 Pit two models of your choice against each other in the game of your choice, or play against an AI yourself! See the game play out in the command interface.
 Run GameRunner.py directly using a command with this format:
 
-`python GameRunner.py [game] [player 1] [player 2]`
+`python main.py [game] [player 1] [player 2]`
 
 e.g. to play chess against Minimax as the first player, use the command
 
-`python GameRunner.py chess human minimax`
+`python main.py chess human minimax`
 
 All games:
 - connect4
