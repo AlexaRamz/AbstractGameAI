@@ -14,7 +14,7 @@ connectfour_resNet_config = ResNetConfig(
 	num_hidden = 128,
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 	models_folder = "models_connectfour",
-	model_path = "model_7.pt"
+	model_path = "models_connectfour/model_0.pt"
 )
 
 chess_resNet_config = ResNetConfig(
