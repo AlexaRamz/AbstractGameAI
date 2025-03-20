@@ -243,7 +243,7 @@ class ConnectFour(Game):
             (self.board == Player.FIRST.value, self.board == Player.SECOND.value, self.board == EMPTY) # 3 layers
         ).astype(np.float32)
 
-        return torch.tensor(encoded_state)
+        return encoded_state
 
     def get_move_by_index(self, index: int) -> ConnectFourMove:
         return ConnectFourMove(index)

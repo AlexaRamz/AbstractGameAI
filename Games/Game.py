@@ -57,7 +57,6 @@ class Game(ABC):
                 value = +10000
             elif winner == Player.SECOND:
                 value =  -10000
-            print("game over")
             return value, True
         else:
             return self.score_position(self.get_current_player()), False

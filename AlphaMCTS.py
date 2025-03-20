@@ -1,14 +1,15 @@
 # Alpha Zero (complete): https://www.youtube.com/watch?v=wuSQpLinRB4
-from typing import Optional, Dict
+from typing import Dict
 import math
-import random
 import numpy as np
 import torch
 
+from AlphaZeroConfig import AlphaZeroConfig
 from Games.Game import Game, Player, Move
+from ResNet import ResNet
 
 class MCTSNode:
-    def __init__(self, game_state: Game, args, action_taken: int=None, parent: Optional["MCTSNode"]=None, prior=0):
+    def __init__(self, game_state: Game, args: AlphaZeroConfig, action_taken: int=None, parent: "MCTSNode"=None, prior: float=0):
         self.game_state = game_state
         self.args = args
         self.parent = parent
@@ -36,7 +37,7 @@ class MCTSNode:
             q_value = child.value_sum / child.visit_count
             if child.game_state.get_current_player() == Player.FIRST:
                 q_value = -q_value
-        return q_value + self.args["exploration_weight"] * (math.sqrt(self.visit_count) / (child.visit_count + 1)) * child.prior
+        return q_value + self.args.exploration_weight * (math.sqrt(self.visit_count) / (child.visit_count + 1)) * child.prior
 
     def expand(self, policy):
         for action_taken, prob in enumerate(policy):
@@ -52,11 +53,11 @@ class MCTSNode:
         self.visit_count += 1
 
 class AlphaMCTS():
-    def __init__(self, game: Game, model, args):
+    def __init__(self, game: Game, model: ResNet, args: AlphaZeroConfig):
         self.game = game
         self.model = model
         self.args = args
-        self.root = None
+        self.root = MCTSNode(game, args)
 
     def take_move(self):
         opp_move = self.game.get_opponent_move()
@@ -74,7 +75,7 @@ class AlphaMCTS():
     def search(self, game_state) -> Move:
         self.root = MCTSNode(game_state, self.args)
         
-        for _search in range(self.args["num_searches"]):
+        for _search in range(self.args.num_searches):
             node = self.root
 
             # Selection

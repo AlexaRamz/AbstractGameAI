@@ -1,12 +1,20 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from Games.Game import Game
+from ResNetConfig import ResNetConfig
+
 class ResNet(nn.Module):
-    def __init__(self, game, num_resBlocks, num_hidden, device):
+    def __init__(self, game: Game, config: ResNetConfig):
         super().__init__()
         row_count, column_count, action_size = game.get_board_info()
         
-        self.device = device
+        num_resBlocks = config.num_resBlocks
+        num_hidden = config.num_hidden
+        self.device = config.device
+        self.model_path = config.model_path
+
         self.startBlock = nn.Sequential(
             nn.Conv2d(3, num_hidden, kernel_size=3, padding=1),
             nn.BatchNorm2d(num_hidden),
@@ -34,7 +42,7 @@ class ResNet(nn.Module):
             nn.Tanh()
         )
         
-        self.to(device)
+        self.to(self.device)
         
     def forward(self, x):
         x = self.startBlock(x)
@@ -43,7 +51,10 @@ class ResNet(nn.Module):
         policy = self.policyHead(x)
         value = self.valueHead(x)
         return policy, value
-        
+    
+    def load_model(self):
+        self.load_state_dict(torch.load(self.model_path, map_location=self.device))
+    
         
 class ResBlock(nn.Module):
     def __init__(self, num_hidden):

@@ -6,35 +6,42 @@ import torch.nn.functional as F
 import numpy as np
 import random
 from tqdm import trange
+import os
 
 from Games.Game import Game, Player
 from Models.Model import Model
 from AlphaMCTS import AlphaMCTS
 from ResNet import ResNet
+from AlphaZeroConfig import AlphaZeroConfig, connectfour_config
 
 class AlphaZeroModel(Model):
-	def __init__(self):
+	def __init__(self, config: AlphaZeroConfig, doTraining=False):
 		self.game = None
 		self.player = None
-		self.args = {
-			'exploration_weight': 1.414,
-			'num_searches': 60,
-			'num_iterations': 8,
-			'num_selfPlay_iterations': 10,
-			'num_epochs': 4,
-			'batch_size': 64
-		}
 		
-		self.num_player1_wins = 0
-		self.num_player2_wins = 0
-	
+		# self.num_player1_wins = 0
+		# self.num_player2_wins = 0
+
+		self.config = config
+		self.doTraining = doTraining
+
 	def set_game_and_player(self, game: Game, player: Player):
-		self.game = game # Connect4 only right now!!
+		self.game = game
 		self.player = player
 
-		self.model = ResNet(self.game, 7, 2, torch.device('cpu'))
-		self.mcts = AlphaMCTS(self.game, self.model, self.args)
-		self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+		if self.doTraining:
+			self.model = ResNet(self.game, self.config.resNet_config)
+			self.mcts = AlphaMCTS(self.game, self.model, self.config)
+			self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+			self.learn()
+		else:
+			self.load_model()
+		
+	def load_model(self):
+		self.model = ResNet(self.game, self.config.resNet_config)
+		self.model.load_model()
+		self.mcts = AlphaMCTS(self.game, self.model, self.config)
+		self.model.eval()
 	
 	def take_move(self):
 		assert(self.game.get_current_player() == self.player)
@@ -46,7 +53,7 @@ class AlphaZeroModel(Model):
 		state = self.game
 
 		while True:
-			print(state.get_display_text())
+			# print(state.get_display_text())
 			action_probs = self.mcts.search(state)
 
 			memory.append((state, action_probs, player))
@@ -74,14 +81,14 @@ class AlphaZeroModel(Model):
 						hist_action_probs,
 						hist_outcome
 					))
-				winner = state.get_winner()
-				if winner == Player.FIRST:
-					self.num_player1_wins += 1
-				elif winner == Player.SECOND:
-					self.num_player2_wins += 1
+				# winner = state.get_winner()
+				# if winner == Player.FIRST:
+				# 	self.num_player1_wins += 1
+				# elif winner == Player.SECOND:
+				# 	self.num_player2_wins += 1
 
-				print(self.num_player1_wins)
-				print(self.num_player2_wins)
+				# print(self.num_player1_wins)
+				# print(self.num_player2_wins)
 				return returnMemory
 			
 			# Switch player turn
@@ -89,8 +96,8 @@ class AlphaZeroModel(Model):
 	
 	def train(self, memory):
 		random.shuffle(memory)
-		for batchIdx in range(0, len(memory), self.args['batch_size']):
-			sample = memory[batchIdx:batchIdx+self.args['batch_size']]
+		for batchIdx in range(0, len(memory), self.config.batch_size):
+			sample = memory[batchIdx:batchIdx+self.config.batch_size]
 			state, policy_targets, value_targets = zip(*sample)
 
 			state, policy_targets, value_targets = np.array(state), np.array(policy_targets), np.array(value_targets).reshape(-1, 1)
@@ -110,23 +117,26 @@ class AlphaZeroModel(Model):
 			self.optimizer.step()
 
 	def learn(self):
-		for iteration in range(self.args['num_iterations']):
+		for iteration in range(self.config.num_iterations):
 			memory = []
 			
 			self.model.eval()
-			for _selfPlay_iteration in trange(self.args['num_selfPlay_iterations']):
+			for _selfPlay_iteration in trange(self.config.num_selfPlay_iterations):
 				memory += self.selfPlay()
 				
 			self.model.train()
-			for _epoch in trange(self.args['num_epochs']):
+			for _epoch in trange(self.config.num_epochs):
 				self.train(memory)
-			
-			torch.save(self.model.state_dict(), f"model_{iteration}.pt")
-			torch.save(self.optimizer.state_dict(), f"optimizer_{iteration}.pt")
+
+			save_folder = self.config.resNet_config.models_folder
+			if not os.path.exists(save_folder):
+				os.mkdir(save_folder)
+			torch.save(self.model.state_dict(), os.path.join(save_folder, f"model_{iteration}.pt"))
+			torch.save(self.optimizer.state_dict(), os.path.join(save_folder, f"optimizer_{iteration}.pt"))
 
 if __name__ == "__main__":
 	from Games.ConnectFour import ConnectFour
 
-	alphaZero = AlphaZeroModel()
+	alphaZero = AlphaZeroModel(connectfour_config, True)
 	alphaZero.set_game_and_player(ConnectFour(), Player.FIRST)
 	alphaZero.learn()
