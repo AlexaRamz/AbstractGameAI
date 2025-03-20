@@ -1,7 +1,7 @@
-
 from typing import Any, Optional, List
-from Games.Game import Game, Player, Move
 import chess
+
+from Games.Game import Game, Player, Move
 
 class ChessMove(Move):
 
@@ -55,10 +55,6 @@ class Chess(Game):
     def get_copy(self) -> Any:
         return Chess(self.board.copy())
 
-    def get_neural_net_description_of_state(self) -> Any:
-        # TODO: Implement
-        pass
-
     def is_game_over(self) -> bool:
         return self.board.outcome() is not None
 
@@ -83,3 +79,15 @@ class Chess(Game):
 
     def undo_move(self) -> None:
         self.board.pop()
+
+    def get_neural_net_description_of_state(self) -> Any:
+        pass
+
+    def get_board_info(self) -> int | int | List[Any]:
+        pass
+
+    def get_move_by_index(self, index: int) -> ChessMove:
+        return ChessMove(index)
+    
+    def get_action_size(self):
+        pass

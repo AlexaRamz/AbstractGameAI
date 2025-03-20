@@ -118,6 +118,10 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def get_board(self):
-        """Returns the game board as a 2D numpy array"""
+    def get_move_by_index(self, index: int) -> Move:
+        pass
+
+    @abstractmethod
+    def get_action_size(self):
+        # returns the total number of moves that could be taken
         pass

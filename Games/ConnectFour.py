@@ -1,8 +1,9 @@
 from typing import Any, List, Optional
-from Games.Game import Game, Player, Move
 import copy
 import numpy as np
 import torch
+
+from Games.Game import Game, Player, Move
 
 class ConnectFourMove(Move):
     def __init__(self, column: int):
@@ -235,9 +236,6 @@ class ConnectFour(Game):
     def get_actions(self):
         return [Player.FIRST.value, Player.SECOND.value, EMPTY]
     
-    def get_board(self):
-        return self.board
-    
     def get_neural_net_description_of_state(self) -> Any:
         encoded_state = np.stack(
             (self.board == Player.FIRST.value, self.board == Player.SECOND.value, self.board == EMPTY) # 3 layers
@@ -245,7 +243,7 @@ class ConnectFour(Game):
 
         return encoded_state
 
-    def get_move_by_index(self, index: int) -> ConnectFourMove:
+    def get_move_by_index(self, index: int) -> Move:
         return ConnectFourMove(index)
     
     def get_action_size(self):

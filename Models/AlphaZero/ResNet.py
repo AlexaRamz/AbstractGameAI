@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from Games.Game import Game
-from ResNetConfig import ResNetConfig
+from Models.AlphaZero.ResNetConfig import ResNetConfig
 
 class ResNet(nn.Module):
     def __init__(self, game: Game, config: ResNetConfig):

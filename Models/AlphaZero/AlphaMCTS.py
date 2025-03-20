@@ -4,9 +4,9 @@ import math
 import numpy as np
 import torch
 
-from AlphaZeroConfig import AlphaZeroConfig
 from Games.Game import Game, Player, Move
-from ResNet import ResNet
+from Models.AlphaZero.AlphaZeroConfig import AlphaZeroConfig
+from Models.AlphaZero.ResNet import ResNet
 
 class MCTSNode:
     def __init__(self, game_state: Game, args: AlphaZeroConfig, action_taken: int=None, parent: "MCTSNode"=None, prior: float=0):

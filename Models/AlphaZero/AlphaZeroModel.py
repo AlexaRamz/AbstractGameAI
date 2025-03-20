@@ -10,17 +10,14 @@ import os
 
 from Games.Game import Game, Player
 from Models.Model import Model
-from AlphaMCTS import AlphaMCTS
-from ResNet import ResNet
-from AlphaZeroConfig import AlphaZeroConfig, connectfour_config
+from Models.AlphaZero.AlphaMCTS import AlphaMCTS
+from Models.AlphaZero.ResNet import ResNet
+from Models.AlphaZero.AlphaZeroConfig import AlphaZeroConfig, connectfour_config
 
 class AlphaZeroModel(Model):
 	def __init__(self, config: AlphaZeroConfig, doTraining=False):
 		self.game = None
 		self.player = None
-		
-		# self.num_player1_wins = 0
-		# self.num_player2_wins = 0
 
 		self.config = config
 		self.doTraining = doTraining
@@ -81,14 +78,6 @@ class AlphaZeroModel(Model):
 						hist_action_probs,
 						hist_outcome
 					))
-				# winner = state.get_winner()
-				# if winner == Player.FIRST:
-				# 	self.num_player1_wins += 1
-				# elif winner == Player.SECOND:
-				# 	self.num_player2_wins += 1
-
-				# print(self.num_player1_wins)
-				# print(self.num_player2_wins)
 				return returnMemory
 			
 			# Switch player turn

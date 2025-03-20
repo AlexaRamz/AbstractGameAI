@@ -22,5 +22,5 @@ chess_resNet_config = ResNetConfig(
 	num_hidden = 128,
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 	models_folder = "models_chess",
-	model_path = "model_0.pt"
+	model_path = "models_chess/model_0.pt"
 )
