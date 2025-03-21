@@ -1,8 +1,9 @@
 import math
 import random
+from typing import Tuple, Optional, Dict, List
+
 from Games.Game import Game, Player, Move
 from Models.Model import Model
-from typing import Tuple, Optional, Dict, List
 
 class Node:
     def __init__(self, unexpanded_moves: List[Move], next_player_to_play: Player, parent: Optional["Node"] = None, move: Optional[Move] = None):
@@ -39,34 +40,35 @@ class MCTS(Model):
             else:
                 self.root = Node(self.game.get_possible_moves(), self.player, None, opp_move)
         # Iterations
+        game_state_copy = self.game.get_copy()
         for _ in range(self.iterations_per_move):
-            self.do_iteration()
+            self.do_iteration(game_state_copy)
         # Select
         self.root = self.most_visited_child_of_node(self.root)
         self.game.perform_move(self.root.move)
 
-    def do_iteration(self):
+    def do_iteration(self, game_state):
         undo_count = 0
         # Selection
         node = self.root
         while node.children and len(node.unexpanded_moves) == 0:
             node = self.best_child_of_node(node)
             undo_count += 1
-            self.game.perform_move(node.move)
+            game_state.perform_move(node.move)
         # Expansion
         if node.unexpanded_moves:
             move = node.unexpanded_moves.pop()
             undo_count += 1
-            self.game.perform_move(move)
-            node = Node(self.game.get_possible_moves(), self.opposite_player(node.next_player_to_play), node, move)
+            game_state.perform_move(move)
+            node = Node(game_state.get_possible_moves(), self.opposite_player(node.next_player_to_play), node, move)
             node.parent.children[move] = node
         # Simulation
-        while not self.game.is_game_over():
-            moves = self.game.get_possible_moves()
+        while not game_state.is_game_over():
+            moves = game_state.get_possible_moves()
             move = random.choice(moves)
             undo_count += 1
-            self.game.perform_move(move)
-        winner = self.game.get_winner()
+            game_state.perform_move(move)
+        winner = game_state.get_winner()
         # Backpropagation
         while node:
             node.visit_count += 1
@@ -74,7 +76,7 @@ class MCTS(Model):
                 node.win_count += 1
             node = node.parent
         for _ in range(undo_count):
-            self.game.undo_move()
+            game_state.undo_move()
 
     def best_child_of_node(self, node: Node) -> Node:
         exploration_param = math.sqrt(2)

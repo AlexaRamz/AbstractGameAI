@@ -1,7 +1,8 @@
 from typing import Tuple, Optional
+import time
+
 from Games.Game import Game, Player
 from Models.Model import Model
-import time
 
 class GameRunnerComparisonResult:
     def __init__(self, winner: Optional[Player], average_first_player_turn_time: float, average_second_player_turn_time: float, total_time: float):

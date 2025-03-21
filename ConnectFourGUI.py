@@ -1,7 +1,8 @@
 import tkinter as tk
+import queue
+
 from Games.Game import Player
 from Games.ConnectFour import ConnectFour
-import queue
 
 NUM_ROWS = 6
 NUM_COLUMNS = 7

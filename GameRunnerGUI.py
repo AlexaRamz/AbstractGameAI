@@ -1,3 +1,6 @@
+import threading
+import queue
+
 from GameSelectionGUI import GameSelectionGUI
 from ConnectFourGUI import ConnectFourGUI
 
@@ -7,10 +10,8 @@ from Games.ConnectFour import ConnectFour
 from Models.HumanModel import HumanModel
 from Models.Minimax import Minimax
 from Models.MCTS import MCTS
-
-import threading
-import queue
-
+from Models.AlphaZero.AlphaZeroModel import AlphaZeroModel
+from Models.AlphaZero.AlphaZeroConfig import connectfour_config
 
 class GameRunnerGUI:
     def __init__(self):
@@ -89,6 +90,8 @@ class GameRunnerGUI:
             self.player_two = Minimax()
         elif game == "MCTS":
             self.player_two = MCTS()
+        elif game == "AlphaZero":
+            self.player_two = AlphaZeroModel(connectfour_config)
 
         self.main_menu.close_window()
         self.start_game_gui()
@@ -97,7 +100,7 @@ class GameRunnerGUI:
         return ["Connect4", "Chess"]
 
     def get_opponents(self):
-        return ["Minimax", "MCTS"]
+        return ["Minimax", "MCTS", "AlphaZero"]
 
     def start_game_gui(self):
         # Use threading to allow background process (game loop and move computation) and GUI to run at the same time
