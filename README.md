@@ -1,4 +1,4 @@
-# AbstractGameAI
+# Abstract Game AI
 ## Set up environment
 To run our program, make sure you have the following packages installed:
 - PyTorch
@@ -30,3 +30,5 @@ All players:
 Play Connect4 against our Minimax, MCTS, and Alpha Zero models in a graphical interface! 
 
 Simply run ConnectFourGUI.py and select your opponent.
+
+![image](https://github.com/user-attachments/assets/643a7158-8e7b-43ed-b590-5539cd3a651f)
